@@ -76,9 +76,19 @@ func main() {
 	if port == "" {
 		log.Fatal("invalid server port")
 	}
-
+	
+	if len(os.Args) >= 1 {
+		address := "127.0.0.1:" + port
+		req := os.Args[1]
+		
+		fmt.Println(req, " > ", address)
+		
+		wire.Send(address, os.Args[1])	
+		return
+	}
+	
 	wire.Listen(config.Stream.MaxConnections, config.Stream.MaxMsgStreamSize, config.Stream.MaxFileStreamSize, port, config.Download)
-
+	fmt.Println("Listen at port: ", port)
 }
 
 var corruptConfigFileMsg = `
