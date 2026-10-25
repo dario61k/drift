@@ -77,7 +77,7 @@ func main() {
 		log.Fatal("invalid server port")
 	}
 	
-	if len(os.Args) >= 1 {
+	if len(os.Args) > 1 {
 		address := "127.0.0.1:" + port
 		req := os.Args[1]
 		
