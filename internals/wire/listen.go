@@ -15,7 +15,7 @@ import (
 
 // Las conexiones se crearan mendiante un chanel que incluira id de peer y otros datos, de momento escucha de cualquiera
 
-func Listen(maxConns, maxMsgStreamSize, maxFileStreamSize int, port string) {
+func Listen(maxConns, maxMsgStreamSize, maxFileStreamSize int, port, downloadPath string) {
 
 	if maxMsgStreamSize <= 0 || maxFileStreamSize <= 0 {
 		log.Fatal("max stream size must be greater than 0")
@@ -31,12 +31,14 @@ func Listen(maxConns, maxMsgStreamSize, maxFileStreamSize int, port string) {
 
 	go func() {
 		for e := range cErrs {
+			fmt.Println()
 			log.Println(e)
 		}
 	}()
 
 	go func() {
 		for r := range cResults {
+			fmt.Println()
 			log.Println("Received: ", r)
 		}
 	}()
@@ -57,7 +59,7 @@ func Listen(maxConns, maxMsgStreamSize, maxFileStreamSize int, port string) {
 		conns <- struct{}{}
 		go func() {
 			defer func() { <-conns }()
-			result, err := handleConnection(conn, maxMsgStreamSize, maxFileStreamSize)
+			result, err := handleConnection(conn, maxMsgStreamSize, maxFileStreamSize, downloadPath)
 			if err != nil {
 				cErrs <- err
 				return
@@ -67,7 +69,7 @@ func Listen(maxConns, maxMsgStreamSize, maxFileStreamSize int, port string) {
 	}
 }
 
-func handleConnection(conn net.Conn, maxMsgStreamSize, maxFileStreamSize int) (string, error) {
+func handleConnection(conn net.Conn, maxMsgStreamSize, maxFileStreamSize int, downloadPath string) (string, error) {
 
 	defer conn.Close()
 
@@ -98,11 +100,6 @@ func handleConnection(conn net.Conn, maxMsgStreamSize, maxFileStreamSize int) (s
 		}
 
 		streamInfoSize = binary.BigEndian.Uint64(headerInfoSize[:])
-
-		if streamInfoSize > 100 {
-			conn.Write([]byte(errs.ErrStreamInfoToLarge.Error()))
-			return "", errs.ErrStreamInfoToLarge
-		}
 	}
 
 	if _, err := io.ReadFull(conn, headerContentSize[:]); err != nil {
@@ -127,7 +124,7 @@ func handleConnection(conn net.Conn, maxMsgStreamSize, maxFileStreamSize int) (s
 		return "", errs.ErrStreamToLarge
 	}
 
-	result, err := readFromConnWithProgress(conn, streamContentSize, streamInfoSize, streamType, "/home/dario61k/Downloads")
+	result, err := readFromConnWithProgress(conn, streamContentSize, streamInfoSize, streamType, downloadPath)
 	if err != nil {
 		conn.Write([]byte(errs.ErrDefault.Error()))
 		return "", err

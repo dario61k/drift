@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	cf "drift/internals/config"
 	"drift/internals/errs"
@@ -71,7 +72,12 @@ func main() {
 		}
 	}
 
-	wire.Listen(2, 50, 1024 * 1024 * 1024 * 5, "4040")
+	port := strconv.Itoa(config.Server.Port)
+	if port == "" {
+		log.Fatal("invalid server port")
+	}
+
+	wire.Listen(config.Stream.MaxConnections, config.Stream.MaxMsgStreamSize, config.Stream.MaxFileStreamSize, port, config.Download)
 
 }
 

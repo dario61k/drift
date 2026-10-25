@@ -29,7 +29,6 @@ var (
 	ErrDefault           = errors.New("error processing stream")
 	ErrUnknowStreamType  = errors.New("unknow stream type")
 	ErrStreamToLarge     = errors.New("stream to large")
-	ErrStreamInfoToLarge = errors.New("stream info to large")
 	ErrStreamSizeZero    = errors.New("stream size zero")
 	ErrInvalidStreamInfo = errors.New("invalid stream info")
 )
