@@ -3,10 +3,10 @@ package toml
 import (
 	"os"
 	"reflect"
-	"strings"	
+	"strings"
 
-	"drift/internals/errs"
-	
+	"drift/internal/errs"
+
 	tm "github.com/BurntSushi/toml"
 )
 
@@ -77,7 +77,7 @@ func Write(path string, str any) error {
 	if err != nil {
 		return err
 	}
-	
+
 	err = os.Rename(tmpPath, path)
 	if err != nil {
 		return err

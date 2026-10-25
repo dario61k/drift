@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"drift/internals/errs"
-	"drift/internals/fs"
+	"drift/internal/errs"
+	"drift/internal/fs"
 )
 
 // Las conexiones se crearan mendiante un chanel que incluira id de peer y otros datos, de momento escucha de cualquiera
@@ -170,7 +170,6 @@ func readFromConnWithProgress(conn net.Conn, streamContentSize, streamInfoSize u
 
 		path = filepath.Join(downloadPath, streamName)
 
-		
 		f, err = os.Create(path)
 		if err != nil {
 			return "", err

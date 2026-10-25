@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strconv"
 
-	cf "drift/internals/config"
-	"drift/internals/errs"
-	"drift/internals/fs"
-	id "drift/internals/identity"
-	"drift/internals/toml"
-	"drift/internals/wire"
+	cf "drift/internal/config"
+	"drift/internal/errs"
+	"drift/internal/fs"
+	id "drift/internal/identity"
+	"drift/internal/toml"
+	"drift/internal/wire"
 )
 
 func main() {

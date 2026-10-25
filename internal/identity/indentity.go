@@ -6,7 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
-	"drift/internals/errs"
+	"drift/internal/errs"
 )
 
 type Keys struct {
