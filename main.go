@@ -43,7 +43,7 @@ func main() {
 	tomlIdentityPath := filepath.Join(userConfig, "drift", "identity.toml")
 
 	var identity id.Keys
-	if err = toml.Init(tomlIdentityPath, &identity, id.DefaultIdentity, false); err != nil {
+	if err = toml.Init(tomlIdentityPath, &identity, make(map[string]any), false); err != nil {
 		var appErr *errs.Error
 		if errors.As(err, &appErr) {
 			if appErr.Is(errs.ErrDecodingToml) {
@@ -71,7 +71,7 @@ func main() {
 		}
 	}
 
-	wire.Listen(2, 50, 1024 * 1024 * 1024 * 0.5, "4040")
+	wire.Listen(2, 50, 1024 * 1024 * 1024 * 5, "4040")
 
 }
 

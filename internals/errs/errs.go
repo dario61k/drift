@@ -26,9 +26,12 @@ var (
 	ErrMissingKeys       = errors.New("public and private keys are required")
 
 	// Wire
-	ErrUnknowStreamType = errors.New("unknow stream type")
-	ErrStreamToLarge    = errors.New("stream to large")
-	ErrStreamSizeZero   = errors.New("stream size zero")
+	ErrDefault           = errors.New("error processing stream")
+	ErrUnknowStreamType  = errors.New("unknow stream type")
+	ErrStreamToLarge     = errors.New("stream to large")
+	ErrStreamInfoToLarge = errors.New("stream info to large")
+	ErrStreamSizeZero    = errors.New("stream size zero")
+	ErrInvalidStreamInfo = errors.New("invalid stream info")
 )
 
 func (e *Error) Error() string {

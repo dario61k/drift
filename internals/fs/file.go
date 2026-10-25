@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 	"time"
+	"strings"
 )
 
 
@@ -100,4 +101,35 @@ func Hashsha256(path string) (string, error) {
 	}	
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func IsValidFilename(name string) bool {
+	if name == "" || name != strings.TrimSpace(name) || len(name) > 255 {
+		return false
+	}
+	if name == "." || name == ".." {
+		return false
+	}
+	if strings.HasSuffix(name, ".") || strings.HasSuffix(name, " ") {
+		return false
+	}
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f {
+			return false
+		}
+	}
+	if strings.ContainsAny(name, `<>:"/\|?*`) {
+		return false
+	}
+	base := name
+	if i := strings.IndexByte(base, '.'); i >= 0 {
+		base = base[:i]
+	}
+	switch strings.ToUpper(base) {
+	case "CON", "PRN", "AUX", "NUL",
+		"COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9":
+		return false
+	}
+	return true
 }

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"drift/internals/errs"
+	"drift/internals/fs"
 )
 
 // Las conexiones se crearan mendiante un chanel que incluira id de peer y otros datos, de momento escucha de cualquiera
@@ -70,47 +71,65 @@ func handleConnection(conn net.Conn, maxMsgStreamSize, maxFileStreamSize int) (s
 
 	defer conn.Close()
 
-	var headerSize [8]byte
 	var headerType [4]byte
+	var headerInfoSize [8]byte
+	var headerContentSize [8]byte
 
-	var stremSize uint64 = 0
 	var streamType uint32 = 0
+	var streamInfoSize uint64 = 0
+	var streamContentSize uint64 = 0
 
 	if _, err := io.ReadFull(conn, headerType[:]); err != nil {
-		conn.Write([]byte("The peer encountered an issue while processing the stream.\n"))
+		conn.Write([]byte(errs.ErrDefault.Error()))
 		return "", err
 	}
-	if _, err := io.ReadFull(conn, headerSize[:]); err != nil {
-		conn.Write([]byte("The peer encountered an issue while processing the stream.\n"))
-		return "", err
-	}
+
 	streamType = binary.BigEndian.Uint32(headerType[:])
 
 	if streamType != 1 && streamType != 2 {
-		conn.Write([]byte("This peer does not recognize this type of stream.\n"))
+		conn.Write([]byte(errs.ErrUnknowStreamType.Error()))
 		return "", errs.ErrUnknowStreamType
 	}
 
-	stremSize = binary.BigEndian.Uint64(headerSize[:])
+	if streamType == 2 {
+		if _, err := io.ReadFull(conn, headerInfoSize[:]); err != nil {
+			conn.Write([]byte(errs.ErrDefault.Error()))
+			return "", err
+		}
 
-	if stremSize == 0 {
-		conn.Write([]byte("This peer does not support streams with zero size.\n"))
+		streamInfoSize = binary.BigEndian.Uint64(headerInfoSize[:])
+
+		if streamInfoSize > 100 {
+			conn.Write([]byte(errs.ErrStreamInfoToLarge.Error()))
+			return "", errs.ErrStreamInfoToLarge
+		}
+	}
+
+	if _, err := io.ReadFull(conn, headerContentSize[:]); err != nil {
+		conn.Write([]byte(errs.ErrDefault.Error()))
+		return "", err
+	}
+
+	streamContentSize = binary.BigEndian.Uint64(headerContentSize[:])
+
+	if streamContentSize == 0 {
+		conn.Write([]byte(errs.ErrStreamSizeZero.Error()))
 		return "", errs.ErrStreamSizeZero
 	}
 
-	if stremSize > uint64(maxMsgStreamSize) && streamType == 1 {
-		conn.Write([]byte("This peer does not support such large streams for messages.\n"))
+	if streamContentSize > uint64(maxMsgStreamSize) && streamType == 1 {
+		conn.Write([]byte(errs.ErrStreamToLarge.Error()))
 		return "", errs.ErrStreamToLarge
 	}
 
-	if stremSize > uint64(maxFileStreamSize) && streamType == 2 {
-		conn.Write([]byte("This peer does not support such large streams for files.\n"))
+	if streamContentSize > uint64(maxFileStreamSize) && streamType == 2 {
+		conn.Write([]byte(errs.ErrStreamToLarge.Error()))
 		return "", errs.ErrStreamToLarge
 	}
 
-	result, err := readFromConnWithProgress(conn, stremSize, streamType, "test_name", "/home/dario61k/Downloads")
+	result, err := readFromConnWithProgress(conn, streamContentSize, streamInfoSize, streamType, "/home/dario61k/Downloads")
 	if err != nil {
-		conn.Write([]byte("The peer encountered an issue while processing the stream.\n"))
+		conn.Write([]byte(errs.ErrDefault.Error()))
 		return "", err
 	}
 
@@ -118,13 +137,11 @@ func handleConnection(conn net.Conn, maxMsgStreamSize, maxFileStreamSize int) (s
 		return "", err
 	}
 
-	fmt.Println(result)
-
 	return result, nil
 
 }
 
-func readFromConnWithProgress(conn net.Conn, stremSize uint64, streamType uint32, streamName, downloadPath string) (string, error) {
+func readFromConnWithProgress(conn net.Conn, streamContentSize, streamInfoSize uint64, streamType uint32, downloadPath string) (string, error) {
 
 	const chunckSize = 32 * 1024
 	var stream [chunckSize]byte
@@ -134,22 +151,39 @@ func readFromConnWithProgress(conn net.Conn, stremSize uint64, streamType uint32
 	var read uint64
 
 	var f *os.File
-	var m = make([]byte, 0, stremSize)
+	var m = make([]byte, 0, streamContentSize)
 
 	var path string
+	var streamName string
 
 	if typeTwo {
-		path = filepath.Join(downloadPath, streamName)
 
 		var err error
+		info := make([]byte, streamInfoSize)
+
+		_, err = io.ReadFull(conn, info[:streamInfoSize])
+		if err != nil {
+			return "", err
+		}
+
+		streamName = string(info)
+		if !fs.IsValidFilename(streamName) {
+			return "", errs.ErrInvalidStreamInfo
+		}
+
+		path = filepath.Join(downloadPath, streamName)
+
+		
 		f, err = os.Create(path)
 		if err != nil {
 			return "", err
 		}
+
+		defer f.Close()
 	}
 
-	for read < stremSize {
-		remaining := stremSize - read
+	for read < streamContentSize {
+		remaining := streamContentSize - read
 		chunk := min(uint64(chunckSize), remaining)
 		var n int
 		var err error
@@ -182,16 +216,14 @@ func readFromConnWithProgress(conn net.Conn, stremSize uint64, streamType uint32
 
 		read += uint64(n)
 
-		progress := int(read * 100 / stremSize)
+		progress := int(read * 100 / streamContentSize)
 
 		if typeTwo {
-			fmt.Printf("\rProgress: %d%%", progress)
+			fmt.Printf("\r%s : %d%%", streamName, progress)
 		}
-
 	}
 
 	if typeTwo {
-		fmt.Println(path)
 		return path, nil
 	}
 

@@ -14,11 +14,6 @@ type Keys struct {
 	Private string `toml:"private"`
 }
 
-var DefaultIdentity = map[string]any{
-	"public":  "",
-	"private": "",
-}
-
 func (k *Keys) Generate() error {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
